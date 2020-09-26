@@ -1,0 +1,222 @@
+/*
+ * LCD 16X2 USING 4BIT MODE.c
+ *
+ * Created: 20-04-2020 18:06:25
+ * Author : hp
+ */ 
+#ifndef F_CPU
+#define F_CPU 8000000
+#endif
+#include <avr/io.h>
+#include <util/delay.h>
+#include <stdarg.h>
+
+char var[5];
+char new[5];
+char hex[10];
+double adc_value=0;
+
+//int buffer[100]; 	
+
+ 
+
+void lcd_cmd(unsigned char cmd)
+{
+	
+	PORTB = cmd;
+	PORTA &= (0xFE);//FOR COMMAND RS=0 |0x00
+	PORTA &= (0XFD);//FOR WRITE RW=0   
+	PORTA |= (0X04);// ENABLE BIT HIGH
+	_delay_ms(10);
+	PORTA &= (0XFB);// ENABLE BIT LOW
+}
+void lcd_data(char data)
+{
+	PORTB = data;
+	_delay_ms(10);
+	PORTA |= (0x01);//FOR COMMAND RS=1
+	PORTA &= (0XFD);//FOR WRITE RW=0
+	PORTA |= (0X04);// ENABLE BIT HIGH
+	_delay_ms(10);
+	PORTA &= (0XFB);// ENABLE BIT LOW
+}
+void lcd_cmd_4bit(unsigned char cmd1)
+{
+	char cmd2 = (cmd1 & (0XF0));
+	lcd_cmd(cmd2);
+	cmd2 = ((cmd1<<4) & (0XF0)); 
+	lcd_cmd(cmd2);
+}
+void lcd_data_4bit(char data1)
+{
+	char data2 = (data1 & (0XF0));
+	lcd_data(data2);
+	data2 = ((data1<<4) & (0XF0));
+	lcd_data(data2);
+}
+void lcd_init() 
+{
+	lcd_cmd_4bit(0X02);//4 BIT MODE
+	lcd_cmd_4bit(0x28);
+	lcd_cmd_4bit(0X0C);// Enable CURSOR
+	lcd_cmd_4bit(0x06); // increment cursor to the right side
+	lcd_cmd_4bit(0X01);//CLEAR THE DISPLAY
+	lcd_cmd_4bit(0x80);//for 1st row
+}
+void lcd_printf(char* format, ...)
+{
+	va_list list;
+	va_start(list,format);
+    while (*format)
+    {
+	
+		  switch(*format++)
+		   {
+			   case 's':
+					  lcd_str(va_arg(list,char*));
+					  break;
+			   case 'd': 
+			          lcd_print_int(va_arg(list,int));
+					 break;
+			   case 'x': 
+					  lcd_print_hex(va_arg(list,int));
+					  break;	 
+			   case 'f':
+			          lcd_print_float(va_arg(list,double));		
+		              break;  
+			   case	'n':
+			          lcd_print_negative(va_arg(list,int)); 
+					  break;
+		   }  
+		         
+	}
+		   
+   va_end(list);
+}
+   void lcd_str(char *string)
+  {
+	 while (*string)
+	 {
+		  lcd_data_4bit(*string++);
+	 }
+	 //lcd_data_4bit(32);
+  }
+ void lcd_print_float(double temp5) // suppose temp5 = 17.24
+ {
+     
+	 //if((temp5)>1)   // 17.24 >1
+	 //{
+		 int temp6 = (int) temp5;
+		   lcd_print_int(temp6); 		
+		   lcd_data_4bit(46); 
+		   temp5 = temp5 - temp6;
+		   while((temp5)!=0)
+		   {
+			   
+			  double temp7 = (temp5)*100;
+			   int temp8 = (int) temp7;
+			   
+			   temp5= temp7- temp8;
+			   lcd_print_int(temp8);
+			   _delay_ms(10);
+			   
+			   if(temp5==0)
+			   {
+				   
+				   break;
+				   
+			   }
+		   }
+		   
+		   
+	 //} 
+	 
+ 	
+   
+ } 
+ void lcd_print_negative(int number)
+ {
+	 if(number!=0&& number<32769)
+	 {
+		 lcd_data_4bit(45);
+		 _delay_ms(10);
+		 lcd_print_int(number);
+	 }
+	 
+ }
+    void lcd_print_hex(int temp3)// to print the hex no.
+  {
+ 	  
+ 	      int temp1 = ((temp3)/16); // storing quotient in temp1
+ 	 	   hex[0]=temp1;
+ 	 	   hex[0] +=48; // converting into ascii
+			lcd_data_4bit(48);
+			lcd_data_4bit(88); 
+ 	 	   lcd_data_4bit(hex[0]);
+ 	 	   _delay_ms(100);
+ 	 	   int temp2 = ((temp3)%16); // storing remainder in temp2
+ 	 	   hex[0] = temp2;
+ 	 	   hex[0] +=48;
+ 	 	   lcd_data_4bit(hex[0]);
+ 	 	   _delay_ms(100); 
+		
+  }
+  void ADC_Enable()
+{
+  
+  ADMUX |= 0X43; // for adc3 and vref = AVCC        
+  ADCSRA |= 0XC7; // to enable adc(ADCEN=1) and start conversion(ADSC=1)
+  
+}
+double adc_read()
+{
+	while(!(ADCSRA & (1<<ADIF)));
+	ADCSRA|=(1<<ADIF);
+	double adc_value1 = (double) ADCL;
+	double adc_value2 = (double)(ADCH)*256;
+	adc_value = adc_value1 + adc_value2;
+	adc_value = adc_value;
+	return (adc_value);
+}
+
+     void lcd_print_int(int temp4)// for printing int
+  {
+ 	         static int j=0;
+           while((temp4)!=0)
+ 		   {
+  			  var[j] = ((temp4)%10);
+  			  var[j] += 48;
+  			  j++;
+  			  temp4  = ((temp4)/10);	
+ 		   }
+			
+  
+  		  for(int i=0;i<1;i++)
+  		   {
+  				  new[i] = var[j-1]; 
+  				  j--;
+				 lcd_data_4bit(new[i]);	
+  		   }
+			 
+			
+  }
+int main(void)
+{
+	DDRA = 0XF7; 
+	DDRB = 0XFF;
+	lcd_init();
+	ADC_Enable();
+	double value = adc_read();
+	value = value/204.6;
+	_delay_ms(10);
+	//sprintf(buffer, "TEMPERATURE= %d", temp);
+ 	while (1)
+	{
+		 
+		 lcd_printf("f",value);
+		 lcd_cmd_4bit(0x01);	
+ 		   _delay_ms(500);     	          	
+ 	}
+}
+
+
