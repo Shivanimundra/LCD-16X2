@@ -1,8 +1,5 @@
 /*
- * LCD 16X2 USING 4BIT MODE.c
- *
- * Created: 20-04-2020 18:06:25
- * Author : hp
+    In this i have implemented all the basic functions and written driver for LCD from scratch.
  */ 
 #ifndef F_CPU
 #define F_CPU 8000000
@@ -24,21 +21,21 @@ void lcd_cmd(unsigned char cmd)
 {
 	
 	PORTB = cmd;
-	PORTA &= (0xFE);//FOR COMMAND RS=0 |0x00
-	PORTA &= (0XFD);//FOR WRITE RW=0   
-	PORTA |= (0X04);// ENABLE BIT HIGH
+	PORTA &= (0xFE);                                    //FOR COMMAND RS=0 |0x00
+	PORTA &= (0XFD);                                    //FOR WRITE RW=0   
+	PORTA |= (0X04);                                    // ENABLE BIT HIGH
 	_delay_ms(10);
-	PORTA &= (0XFB);// ENABLE BIT LOW
+	PORTA &= (0XFB);                                   // ENABLE BIT LOW
 }
 void lcd_data(char data)
 {
 	PORTB = data;
 	_delay_ms(10);
-	PORTA |= (0x01);//FOR COMMAND RS=1
-	PORTA &= (0XFD);//FOR WRITE RW=0
-	PORTA |= (0X04);// ENABLE BIT HIGH
+	PORTA |= (0x01);                                  //FOR COMMAND RS=1
+	PORTA &= (0XFD);                                  //FOR WRITE RW=0
+	PORTA |= (0X04);                                  // ENABLE BIT HIGH
 	_delay_ms(10);
-	PORTA &= (0XFB);// ENABLE BIT LOW
+	PORTA &= (0XFB);                                 // ENABLE BIT LOW
 }
 void lcd_cmd_4bit(unsigned char cmd1)
 {
@@ -56,12 +53,12 @@ void lcd_data_4bit(char data1)
 }
 void lcd_init() 
 {
-	lcd_cmd_4bit(0X02);//4 BIT MODE
+	lcd_cmd_4bit(0X02);                                     //4 BIT MODE
 	lcd_cmd_4bit(0x28);
-	lcd_cmd_4bit(0X0C);// Enable CURSOR
-	lcd_cmd_4bit(0x06); // increment cursor to the right side
-	lcd_cmd_4bit(0X01);//CLEAR THE DISPLAY
-	lcd_cmd_4bit(0x80);//for 1st row
+	lcd_cmd_4bit(0X0C);                                     // Enable CURSOR
+	lcd_cmd_4bit(0x06);                                    // increment cursor to the right side
+	lcd_cmd_4bit(0X01);                                    //CLEAR THE DISPLAY
+	lcd_cmd_4bit(0x80);                                    //for 1st row
 }
 void lcd_printf(char* format, ...)
 {
